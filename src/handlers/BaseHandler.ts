@@ -1,5 +1,5 @@
-import Styled from './Styled';
-import { Constants, Helpers } from '../utils';
+import Styled from "./Styled";
+import { Constants, Helpers } from "../utils";
 
 interface Range {
   index: number;
@@ -31,69 +31,110 @@ class BaseHandler {
     new Styled().apply();
 
     if (this.isNotExistLoading()) {
-      const node = document.createElement('div');
+      const node = document.createElement("div");
       node.innerHTML = this.helpers.loadingHTML();
 
       this.quill.container.appendChild(node);
     }
 
-    if (typeof this.options.upload !== 'function') {
-      console.warn('[Missing config] upload function that returns a promise is required');
+    if (typeof this.options.upload !== "function") {
+      console.warn(
+        "[Missing config] upload function that returns a promise is required"
+      );
     }
 
     setTimeout(() => {
       if (!this.options.accepts) {
         if (this.handler === Constants.blots.image) {
-          this.options.accepts = ['jpg', 'jpeg', 'png'];
+          this.options.accepts = ["jpg", "jpeg", "png"];
         }
         if (this.handler === Constants.blots.video) {
-          this.options.accepts = ['mp4', 'webm'];
+          this.options.accepts = ["mp4", "webm"];
         }
       }
 
       if (this.handler === Constants.blots.image) {
-        this.possibleExtension = new Set(['apng', 'bmp', 'gif', 'ico', 'cur', 'jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp', 'png', 'svg', 'tif', 'tiff', 'webp']);
+        this.possibleExtension = new Set([
+          "apng",
+          "bmp",
+          "gif",
+          "ico",
+          "cur",
+          "jpg",
+          "jpeg",
+          "jfif",
+          "pjpeg",
+          "pjp",
+          "png",
+          "svg",
+          "tif",
+          "tiff",
+          "webp",
+        ]);
       }
       if (this.handler === Constants.blots.video) {
-        this.possibleExtension = new Set(['mp4', 'webm', '3gp', 'mp4', 'mpeg', 'quickTime', 'ogg']);
+        this.possibleExtension = new Set([
+          "mp4",
+          "webm",
+          "3gp",
+          "mp4",
+          "mpeg",
+          "quickTime",
+          "ogg",
+        ]);
       }
 
-      this.allowedFormatRegex = new RegExp('^(' + this.options.accepts.filter((el) => this.possibleExtension.has(el.toLowerCase()))
-      .reduce((acc, el, i) => acc.concat(i !== 0 ? `|${el}` : `${el}`), '') + ')$', 'i');
+      this.allowedFormatRegex = new RegExp(
+        "^(" +
+          this.options.accepts
+            .filter((el) => this.possibleExtension.has(el.toLowerCase()))
+            .reduce(
+              (acc, el, i) => acc.concat(i !== 0 ? `|${el}` : `${el}`),
+              ""
+            ) +
+          ")$",
+        "i"
+      );
     }, 1);
   }
 
   applyForToolbar() {
-    const toolbar = this.quill.getModule('toolbar');
-    this.loading = document.getElementById(
-      `${Constants.ID_SPLIT_FLAG}.QUILL-LOADING`
+    const toolbar = this.quill.getModule("toolbar");
+    this.loading = <any>(
+      document.getElementById(`${Constants.ID_SPLIT_FLAG}.QUILL-LOADING`)
     );
     toolbar.addHandler(this.handler, this.selectLocalFile.bind(this));
   }
 
   selectLocalFile() {
     this.range = this.quill.getSelection();
-    this.fileHolder = document.createElement('input');
-    this.fileHolder.setAttribute('type', 'file');
-    this.fileHolder.setAttribute('accept', `${this.handler}/*`);
+    this.fileHolder = document.createElement("input");
+    this.fileHolder.setAttribute("type", "file");
+    this.fileHolder.setAttribute("accept", `${this.handler}/*`);
     this.fileHolder.onchange = this.fileChanged.bind(this);
     this.fileHolder.click();
   }
 
   loadFile(context) {
-    this.loading.removeAttribute('class');
-    this.loading.setAttribute('class', Constants.LOADING_CLASS_NAME);
+    this.loading.removeAttribute("class");
+    this.loading.setAttribute("class", Constants.LOADING_CLASS_NAME);
 
     const file = context.fileHolder.files[0];
     this.handlerId = this.helpers.generateID();
 
     const fileReader = new FileReader();
-    fileReader.addEventListener('load', () => {
-      this.insertBase64Data(fileReader.result, this.handlerId);
-    }, false);
+
+    // fileReader.addEventListener('load', () => {
+    //   this.insertBase64Data(fileReader.result, this.handlerId);
+    // }, false);
+
+    fileReader.readAsDataURL(file);
+    fileReader.onload = (e: any) => {
+      this.insertBase64Data(e.target.result, this.handlerId);
+    };
 
     if (!file) {
-      console.warn('[File not found] Something was wrong, please try again!!');
+      console.warn("[File not found] Something was wrong, please try again!!");
       return null;
     }
 
@@ -103,17 +144,17 @@ class BaseHandler {
   }
 
   fileChanged() {
-    const { file, handlerId } = this.loadFile(this);
+    const { file, handlerId } = <any>this.loadFile(this);
 
     if (!file) {
       return;
     }
 
-    const extension = file.name.split('.').pop();
+    const extension = file.name.split(".").pop();
 
     if (!this.isValidExtension(extension)) {
       console.warn(
-        '[Wrong Format] Format was wrong, please try with correct format!!'
+        "[Wrong Format] Format was wrong, please try with correct format!!"
       );
     }
 
@@ -130,14 +171,14 @@ class BaseHandler {
     this.options.upload(file).then(
       (url) => {
         this.insertFileToEditor(url, handlerId);
-        this.loading.removeAttribute('class');
-        this.loading.setAttribute('class', Constants.NONE_DISPLAY_CLASS_NAME);
+        this.loading.removeAttribute("class");
+        this.loading.setAttribute("class", Constants.NONE_DISPLAY_CLASS_NAME);
       },
       (error) => {
-        this.loading.removeAttribute('class');
-        this.loading.setAttribute('class', Constants.NONE_DISPLAY_CLASS_NAME);
+        this.loading.removeAttribute("class");
+        this.loading.setAttribute("class", Constants.NONE_DISPLAY_CLASS_NAME);
         setTimeout(() => {
-          const el = document.getElementById(handlerId);
+          const el = <any>document.getElementById(handlerId);
           el.remove();
         }, 1000);
       }
@@ -145,7 +186,7 @@ class BaseHandler {
   }
 
   insertBase64Data(url: string | ArrayBuffer, handlerId: string) {
-    const range = this.range;
+    const range = <any>this.range;
     this.quill.insertEmbed(
       range.index,
       this.handler,
@@ -155,16 +196,16 @@ class BaseHandler {
     const el = document.getElementById(handlerId);
 
     if (el) {
-      el.setAttribute('class', Constants.QUILL_UPLOAD_HOLDER_CLASS_NAME);
+      el.setAttribute("class", Constants.QUILL_UPLOAD_HOLDER_CLASS_NAME);
     }
   }
 
   insertFileToEditor(url: string, handlerId: string) {
     const el = document.getElementById(handlerId);
     if (el) {
-      el.setAttribute('src', url);
-      el.removeAttribute('id');
-      el.removeAttribute('class');
+      el.setAttribute("src", url);
+      el.removeAttribute("id");
+      el.removeAttribute("class");
     }
   }
 
